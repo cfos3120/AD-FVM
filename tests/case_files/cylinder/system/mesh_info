@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  12
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      functions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+
+mesh_info
+{
+    type coded;
+
+    // Load the library containing the 'coded' functionObject
+    libs            ("libutilityFunctionObjects.so");
+
+    codeInclude
+    #{
+        #include "volFields.H"
+        #include "fvc.H"
+        #include "fvm.H"
+        #include "dimensionedTypes.H"
+        #include "IOdictionary.H"
+        #include "dimensionedScalar.H"
+        #include "fvMesh.H"
+        #include "volFields.H" 
+        #include "surfaceFields.H"
+    #};
+
+    codeExecute
+    #{
+        const fvMesh& mesh = refCast<const fvMesh>(obr_);
+        mesh.Sf().write();
+
+        surfaceVectorField delta
+        (
+            IOobject
+            (
+                "delta",
+                "constant",              // <- Override instance
+                polyMesh::meshSubDir,    // <- "polyMesh"
+                //mesh.time().name(), 
+                mesh,
+                IOobject::NO_READ,
+                IOobject::AUTO_WRITE
+            ),
+            mesh.delta()()   // or mesh.delta().ref() in some versions
+        );
+        
+        delta().write();
+        mesh.weights().write();
+        mesh.C().write();  
+        mesh.V().write();
+    #};
+}

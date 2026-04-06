@@ -1,0 +1,25 @@
+# Workplace
+__pycache__
+
+# Datasets
+*.npy
+
+# OpenFOAM Files created through our OpenFOAM util
+Cc
+delta
+Sf
+weights
+Vc
+
+# OpenFOAM Files created through postprocessing
+grad(U)
+grad(p)
+div(U)
+divU
+divU_phiAll
+lapU
+phi
+UEqn
+
+# Save space by not including the raw Mesh
+*.msh

@@ -1,0 +1,175 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  12
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      functions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+
+momentumx
+{
+    type coded;
+
+    // Load the library containing the 'coded' functionObject
+    libs            ("libutilityFunctionObjects.so");
+
+    codeInclude
+    #{
+        #include "volFields.H"
+        #include "fvc.H"
+        #include "fvm.H"
+        #include "dimensionedTypes.H"
+        #include "IOdictionary.H"
+        #include "dimensionedScalar.H"
+    #};
+
+    codeExecute
+    #{
+
+        const fvMesh& mesh = refCast<const fvMesh>(obr_);
+        //const volVectorField& U = mesh.lookupObject<volVectorField>("U");
+      
+
+        const volVectorField U
+        (
+            IOobject
+            (
+                "U",
+                mesh.time().name(),
+                mesh,
+                IOobject::MUST_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh
+        );
+
+        const surfaceScalarField phi
+        (
+            IOobject
+            (
+                "phi",
+                mesh.time().name(),
+                mesh,
+                IOobject::MUST_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh
+        );
+
+        scalar constantValue = 1; // Adjust this value as needed (1 is unscaled)
+
+        // Create the volScalarField with the constant value
+        volScalarField nu
+        (
+            IOobject
+            (
+                "nu",                  // Field name
+                mesh().time().name(),         // Time directory
+                mesh,                       // Mesh object
+                IOobject::NO_READ,          // Do not read from file
+                IOobject::NO_WRITE          // Do not write to file
+            ),
+            mesh,
+            dimensionedScalar("nu", dimensionSet(0, 2, -1, 0, 0, 0, 0), constantValue)
+        );
+        
+        //intermediary components
+
+        // const volVectorField ddtU
+        // (
+        //     IOobject
+        //     (
+        //         "ddtU",
+        //         mesh.time().name(),
+        //         mesh,
+        //         IOobject::MUST_READ,
+        //         IOobject::NO_WRITE
+        //     ),
+        //     fvc::ddt(U)
+        // );
+
+        const volVectorField divU
+        (
+            IOobject
+            (
+                "divU",
+                mesh.time().name(),
+                mesh,
+                IOobject::MUST_READ,
+                IOobject::NO_WRITE
+            ),
+            fvc::div(phi,U)
+        );
+        
+        const volVectorField lapU
+        (
+            IOobject
+            (
+                "lapU",
+                mesh.time().name(),
+                mesh,
+                IOobject::MUST_READ,
+                IOobject::NO_WRITE
+            ),
+            fvc::laplacian(nu, U)
+        );
+
+        volVectorField UEqn
+        (   
+            IOobject
+                (
+                    "UEqn",                  // Field name
+                    mesh().time().name(),         // Time directory
+                    mesh,                       // Mesh object
+                    IOobject::NO_READ,          // Do not read from file
+                    IOobject::NO_WRITE          // Do not write to file
+            ),
+            fvc::ddt(U)
+            +fvc::div(phi,U)
+            -fvc::laplacian(nu, U)
+        );
+        
+        surfaceScalarField phiAll
+        (
+            IOobject
+            (
+                "phiAll",
+                mesh.time().name(),
+                mesh,
+                IOobject::NO_READ,
+                IOobject::AUTO_WRITE
+            ),
+            fvc::flux(U)
+        );
+        
+        const volVectorField divU_phiAll
+        (
+            IOobject
+            (
+                "divU_phiAll",
+                mesh.time().name(),
+                mesh,
+                IOobject::MUST_READ,
+                IOobject::NO_WRITE
+            ),
+            fvc::div(phiAll,U)
+        );
+        
+        
+        divU_phiAll.write();
+        // ddtU.write();
+        divU.write();
+        lapU.write();
+        UEqn.write();
+    #};
+}
