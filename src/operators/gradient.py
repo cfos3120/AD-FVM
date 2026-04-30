@@ -10,6 +10,10 @@ class Gradient_Operator():
 
     @classmethod
     def calculate(cls, mesh:FVM_Mesh, input_field:torch.Tensor, field_type:Literal['U','p']) -> torch.Tensor:
+        '''
+        Output Channels (2D) -> ['𝜕xU', '𝜕yU', '𝜕xV', '𝜕yV']
+        Output Channels (3D) -> ['𝜕xU', '𝜕yU', '𝜕zU', '𝜕xV', '𝜕yV', '𝜕zV', '𝜕xW', '𝜕yW', '𝜕zW']
+        '''
         cls._mesh = mesh
         cls.field_type = field_type
         

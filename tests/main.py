@@ -7,7 +7,7 @@ import torch
 OPENFOAM_CASE_DIR = Path(r'C:\Users\Noahc\Documents\USYD\PHD\8 - Github\AD-FVM\tests\case_files\cylinder\case.foam')
 DATASET_DIR = None
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     Mesh = OpenFoam_Mesh(openfoam_case_dir=OPENFOAM_CASE_DIR, dtype=torch.float32, corrected=True)
     Mesh._print_mesh_components()
 
@@ -16,3 +16,13 @@ if __name__ == '__main__':
     grad_field = Gradient_Operator.calculate(mesh=Mesh, input_field=test_inference, field_type='U')
     lap_field = Laplacian_Operator.calculate(mesh=Mesh, input_field=test_inference, field_type='U')
     lap_field += Laplacian_Operator.correction(mesh=Mesh, input_field=test_inference, field_type='U', grad_field=grad_field)
+
+    
+if __name__ == '__main__':
+    import numpy as np
+
+    x = np.load(r"C:\Users\Noahc\Documents\USYD\tutorial\for_repo\cylinder\compiled_output\cylinder_2026.npy",
+                allow_pickle=True).item()
+    print(x.keys())
+    for key,value in x.items():
+        print(key, value.shape)

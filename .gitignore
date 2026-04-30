@@ -4,6 +4,10 @@ __pycache__
 # Datasets
 *.npy
 
+# Training Outputs
+trained_models/
+datasets/
+
 # OpenFOAM Files created through our OpenFOAM util
 Cc
 delta

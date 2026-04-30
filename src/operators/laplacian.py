@@ -49,11 +49,10 @@ class Laplacian_Operator():
     @classmethod
     def internal_flux(cls):
         idx = cls._mesh.internal_faces
-        orth_f_mag = cls._mesh.delta_mag[idx]
         
         face_grads = cls._input_field[:,:,cls._mesh.face_neighbours[idx]] - cls._input_field[:,:,cls._mesh.face_owners[idx]]
-
         face_grads /= cls._mesh.d_mag[idx].reshape(1,1,-1,1)
+
         diffusion = face_grads*(cls._mesh.delta_mag[idx]*cls._mesh.Sf_mag[idx]).reshape(1,1,-1,1)
         
         cls.lapl_field.index_add_(2, cls._mesh.face_owners[idx], diffusion)
@@ -99,9 +98,4 @@ class Laplacian_Operator():
             else:
                 orth_f = cls._mesh.k_vector[idx]
                 diffusion = torch.einsum('fd, btfde-> btfe',orth_f, grad_values)*cls._mesh.Sf_mag[idx].reshape(1,1,-1,1)
-                # orth_coefficient = torch.einsum('fd,fd -> f', cls._mesh.nf[BC_item.face_idx], cls._mesh.k_vector[BC_item.face_idx])
-                # orth_coefficient *= cls._mesh.Sf_mag[BC_item.face_idx]/(cls._mesh.k_vector_mag[BC_item.face_idx]**2)
-                # orth_coefficient[torch.isnan(orth_coefficient)] = 0
-
-                # diffusion = grad_values*orth_coefficient.reshape(1,1,-1,1)
                 cls.lapl_field.index_add_(2,  cls._mesh.face_owners[BC_item.face_idx], diffusion)
