@@ -5,8 +5,9 @@ __pycache__
 *.npy
 
 # Training Outputs
-trained_models/
-datasets/
+tests/models/trained_models/
+tests/datasets/
+reviews/
 
 # OpenFOAM Files created through our OpenFOAM util
 Cc
