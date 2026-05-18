@@ -2,35 +2,35 @@
 parameters:
   
   # Net Parameters
-  model_name: 'GNOT'
+  model_name: 'GenevaNOT'
   n_experts: 1
   n_head: 2
   n_layers: 3
   n_hidden: 32
   attn_dropout: 0.3
-  attn_type: linear
+  attn_type: flash
 
   # Training Parameters
   optimizer: adam
   scheduler: cycle
-  epochs: 1 #500
+  epochs: 1000
   learning_rate: 0.005
   batch_size: 4
   loss_function: LPloss
-  data_weighting: 50
-  pde_loss_weight: 1
+  data_weighting: 0.001
+  #pde_loss_weight: 10
   seed: 42
 
   # Cyclic Learning rate args
   init_lr: 0.001
   div_factor: 20
   pct_start: 0.05
-  final_div_factor: 1000
+  final_div_factor: 10000
 
 dataset_settings:
   name: Cylinder_2D
   openFOAM_case_dir: ./tests/case_files/cylinder/case.foam
-  dataset_dir: ./tests/datasets/cylinder_2026.npy
+  dataset_dir: ./tests/datasets/cylinder_2026_v2.npy
 
   # Model-Data Specific
   input_dim: 2
@@ -39,5 +39,8 @@ dataset_settings:
   output_dim: 3
 
   # Training
-  data_split: 0.50
-  
+  data_split: 0.75
+
+#run_info:
+  #out_dir: ./tests/models/trained_models/Legacy_devoted_sky_23
+  #out_dir: ./tests/models/trained_models/Legacy_genial_donkey_7

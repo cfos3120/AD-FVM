@@ -10,8 +10,7 @@ import argparse
 from src import OpenFoam_Mesh
 from src import Physics_loss_controller
 from .utils import LpLoss, get_GNOT_model, get_dataset_loaders, create_save_dir
-
-OPENFOAM_CASE_DIR = Path(r'C:\Users\Noahc\Documents\USYD\PHD\8 - Github\AD-FVM\tests\case_files\cylinder\case.foam')
+from .validation import validate
 
 # load configuration from json
 parser = argparse.ArgumentParser("TRAIN THE FLASH GNOT TRANSFORMER")
@@ -20,7 +19,7 @@ args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    print(os.getcwd())
+
     with open(args.config, 'r') as file:
         config = yaml.safe_load(file)
     params = config['parameters']
@@ -30,7 +29,7 @@ if __name__ == '__main__':
     train_dataloader, test_dataloader = get_dataset_loaders(params, dataset_params)
 
     # Setup FVM and Physics-Loss Controller
-    Mesh = OpenFoam_Mesh(openfoam_case_dir=OPENFOAM_CASE_DIR, 
+    Mesh = OpenFoam_Mesh(openfoam_case_dir=Path(dataset_params['openFOAM_case_dir']), 
                          dtype=torch.float32, 
                          corrected=True)
     Mesh._print_mesh_components()
@@ -84,7 +83,7 @@ if __name__ == '__main__':
             training_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1000)
             optimizer.step()
-            break
+            #break
         
         with torch.no_grad():
             test_cumu_loss = 0
@@ -94,22 +93,23 @@ if __name__ == '__main__':
                 out = model(x=x, inputs=input_f)
                 data_loss = Loss_fn(out,y)
                 test_cumu_loss += data_loss.item()
-                break   
+                #break   
         
         train_cumu_loss /= len(train_dataloader)
         test_cumu_loss /= len(test_dataloader)
         print(f"{epoch:6}/{params['epochs']} | Train Loss: {train_cumu_loss:10.4f} | Test Loss: {test_cumu_loss:7.4f}")
-        break
+        #break
     print('Training Complete')
-
-    # Save model and run outcome
-    config['run_info']['train_loss'] = train_cumu_loss
-    config['run_info']['test_loss'] = test_cumu_loss
 
     if torch.cuda.device_count() > 1:
         model = model.module
 
     save_dir = create_save_dir(config)
+
+    # Save model and run outcome
+    config['run_info']['train_loss'] = train_cumu_loss
+    config['run_info']['test_loss'] = test_cumu_loss
+
     checkpoint = {'epoch': epoch, 
                   'model_state_dict': model.state_dict(), 
                   'optimizer_state_dict': optimizer.state_dict(), 
@@ -117,3 +117,6 @@ if __name__ == '__main__':
     full_save_path = f"{config['run_info']['out_dir']}/checkpoint_epoch_{epoch+1}.pth"
     torch.save(checkpoint, full_save_path)
     print(f'Model saved to: {full_save_path}')
+
+    # Validate
+    validate(model.state_dict(), config)
