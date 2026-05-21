@@ -4,6 +4,8 @@ from typing import Tuple
 import numpy as np
 import time
 import os
+import subprocess
+import sys
 from .models.gnot_custom import Custom_GNOT
 
 class LpLoss(object):
@@ -23,12 +25,12 @@ class LpLoss(object):
 
     def abs(self, x, y):
         num_examples = x.size()[0]
+        num_cells_i = np.argmax(x.shape)
 
-        #Assume uniform mesh
-        h = 1.0 / (x.size()[2] - 1.0)
+        #Assume uniform 2d mesh
+        h = 1.0 / (int(np.sqrt(x.shape[num_cells_i])) - 1.0)
 
         all_norms = (h**(self.d/self.p))*torch.norm(x.reshape(num_examples, -1) - y.reshape(num_examples, -1), self.p, 1)
-        #all_norms = torch.norm(x.reshape(num_examples, -1) - y.reshape(num_examples, -1), self.p, 1) # unstructured meshes
 
         if self.reduction:
             if self.size_average:
@@ -63,7 +65,12 @@ class LpLoss(object):
         
 
 def get_GNOT_model(dataset_params, params):
-    model = Custom_GNOT(trunk_size=dataset_params['input_dim'],
+    if params['model_name'] == 'GNOT':
+        from .models.gnot_custom import Custom_GNOT as GNOT
+    else:
+        from .models.geneva import GenevaNOT as GNOT
+
+    model = GNOT(trunk_size=dataset_params['input_dim'],
                     branch_sizes=dataset_params['branch_sizes'],
                     space_dim=dataset_params['space_dim'],
                     output_size=dataset_params['output_dim'],
@@ -163,6 +170,19 @@ def create_save_dir(config:dict) -> str:
     out_dir = f'./tests/models/trained_models/{model_type}_{problem_type}_{config["run_info"]["timestamp"]}'
     config['run_info']['out_dir'] = out_dir
 
+    # Try fetching the git_id
+    try:
+        tag = subprocess.check_output(
+                ["git", "describe", "--always"],
+                text=True,
+                stderr=subprocess.STDOUT,
+                ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        tag = 'Unknown'
+        print(f"Could not determine git tag: {e}", file=sys.stderr)
+    config['run_info']['git_commit_hash'] = tag
+
+    # Make directory
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     

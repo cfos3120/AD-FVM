@@ -49,6 +49,8 @@ class OpenFoam_Mesh(FVM_Mesh):
             z_values = np.unique(points[...,-1])        # always azzume z direction for 3D Meshes
             if len(z_values) > 2:
                 print('   Problem is detected to be 3D, AD-FVM is set for 3D')
+                self.z_len = 1
+                self.dim = 3
             else:
                 self.z_len = z_values.max() - z_values.min()
                 self.dim = 2

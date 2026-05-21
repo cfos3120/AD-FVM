@@ -11,6 +11,9 @@ from einops import repeat, rearrange
 from torch.nn import functional as F
 from torch.nn import GELU, ReLU, Tanh, Sigmoid
 from torch.nn.utils.rnn import pad_sequence
+try: 
+    from flash_attn import flash_attn_qkvpacked_func, flash_attn_func
+except: pass
 
 #from data_utils.utils import MultipleTensors
 class MultipleTensors():
@@ -221,7 +224,6 @@ class FlashAttention(nn.Module):
     """
 
     def __init__(self, config, cross=False):
-        from flash_attn import flash_attn_qkvpacked_func, flash_attn_func
         super(FlashAttention, self).__init__()
         assert config.n_embd % config.n_head == 0
         
@@ -289,6 +291,7 @@ class MIOECrossAttentionBlock(nn.Module):
             self.selfattn = LinearAttention(config)
             self.crossattn = LinearCrossAttention(config)
         elif config.attn_type == 'flash':
+            from flash_attn import flash_attn_qkvpacked_func, flash_attn_func
             print('Using Flash Attention')
             self.selfattn = FlashAttention(config)
             self.crossattn = FlashAttention(config, cross=True)
