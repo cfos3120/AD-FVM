@@ -17,8 +17,8 @@ parameters:
   learning_rate: 0.005
   batch_size: 4
   loss_function: LPloss
-  data_weighting: 0.001
-  pde_loss_weight: 10
+  data_weighting: 50
+  pde_loss_weight: 5.656854248
   seed: 42
 
   # Cyclic Learning rate args
@@ -30,7 +30,7 @@ parameters:
 dataset_settings:
   name: Cylinder_2D
   openFOAM_case_dir: ./tests/case_files/cylinder/case.foam
-  dataset_dir: ./tests/datasets/cylinder_2026_v2.npy
+  dataset_dir: ./tests/datasets/cylinder_2026_v3.npy
 
   # Model-Data Specific
   input_dim: 2

@@ -27,11 +27,10 @@ class LpLoss(object):
         num_examples = x.size()[0]
         num_cells_i = np.argmax(x.shape)
 
-        #Assume uniform mesh
-        h = 1.0 / (x.size()[num_cells_i] - 1.0) #(this should be x.size(2) right?)
+        #Assume uniform 2d mesh
+        h = 1.0 / (int(np.sqrt(x.shape[num_cells_i])) - 1.0)
 
         all_norms = (h**(self.d/self.p))*torch.norm(x.reshape(num_examples, -1) - y.reshape(num_examples, -1), self.p, 1)
-        #all_norms = torch.norm(x.reshape(num_examples, -1) - y.reshape(num_examples, -1), self.p, 1) # unstructured meshes
 
         if self.reduction:
             if self.size_average:

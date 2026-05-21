@@ -32,8 +32,6 @@ def validate(ckpt, config):
 
     # Override for consistency
     
-
-
     # Prepare Dataset
     train_dataloader, test_dataloader = get_dataset_loaders(params, dataset_params)
 
