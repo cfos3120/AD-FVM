@@ -32,8 +32,8 @@ class OpenFoam_Mesh(FVM_Mesh):
         path = self.case_parent_dir / "constant" / "polyMesh" / "Cc"
         try:
             print('   Loading Cell Centres from /constant/polyMesh/Cc')
-            self.cell_centres,__ = parse_openfoam_file(path) 
-            self.cell_centres = torch.tensor(self.cell_centres[:,:self.dim], dtype=self.dtype) 
+            cell_centres,__ = parse_openfoam_file(path) 
+            self.cell_centres = torch.tensor(cell_centres[:,:self.dim], dtype=self.dtype) 
             self.n_cells = self.cell_centres.shape[0]
         except AssertionError:
             print('   Loading Cell Centres failed, falling back to calculation')
@@ -64,8 +64,8 @@ class OpenFoam_Mesh(FVM_Mesh):
         path = self.case_parent_dir / "0" / "Vc"
         try:
             print('   Loading Cell Volumes from /0/Vc') 
-            self.cell_volumes,__ = parse_openfoam_file(path) 
-            self.cell_volumes = torch.tensor(self.cell_volumes/self.z_len, dtype=self.dtype) 
+            cell_volumes,__ = parse_openfoam_file(path) 
+            self.cell_volumes = torch.tensor(cell_volumes/self.z_len, dtype=self.dtype) 
         except AssertionError:
             print('   Loading Cell Volumes failed, falling back to calculation')
             self._fallback_vtk_mesh_init()
@@ -75,8 +75,8 @@ class OpenFoam_Mesh(FVM_Mesh):
         path = self.case_parent_dir / "constant" / "weights"
         try:
             print('   Loading Interpolation Weights from /constant/weights') 
-            self.internal_face_weights,__ = parse_openfoam_file(path)
-            self.internal_face_weights = torch.tensor(self.internal_face_weights, dtype=self.dtype)
+            internal_face_weights,__ = parse_openfoam_file(path)
+            self.internal_face_weights = torch.tensor(internal_face_weights, dtype=self.dtype)
         except AssertionError:
             print('   Loading Interpolation Weights failed, falling back to calculation')
             self._fallback_vtk_mesh_init()
@@ -86,8 +86,8 @@ class OpenFoam_Mesh(FVM_Mesh):
         path = self.case_parent_dir / "constant" / "polyMesh" / "owner"
         try:
             print('   Loading Face Owners from /constant/polyMesh/owner') 
-            self.face_owners,__ = parse_openfoam_file(path)
-            self.face_owners = torch.tensor(self.face_owners, dtype=torch.int64)
+            face_owners,__ = parse_openfoam_file(path)
+            self.face_owners = torch.tensor(face_owners, dtype=torch.int64)
         except AssertionError:
             print('   Loading Face Owners failed, falling back to calculation')
             self._fallback_vtk_mesh_init()
@@ -97,8 +97,8 @@ class OpenFoam_Mesh(FVM_Mesh):
         path = self.case_parent_dir / "constant" / "polyMesh" / "neighbour"
         try:
             print('   Loading Face Neighbours from /constant/polyMesh/neighbour') 
-            self.face_neighbours,__ = parse_openfoam_file(path)
-            self.face_neighbours = torch.tensor(self.face_neighbours, dtype=torch.int64)
+            face_neighbours,__ = parse_openfoam_file(path)
+            self.face_neighbours = torch.tensor(face_neighbours, dtype=torch.int64)
         except AssertionError:
             print('   Loading Face Neighbours failed, falling back to calculation')
             self._fallback_vtk_mesh_init()
@@ -154,16 +154,19 @@ class OpenFoam_Mesh(FVM_Mesh):
         
         prev_patch_last_face_n = self.num_internal_faces-1
         self.num_boundary_faces = 0
+        self.bc_conditions_n = 0
         for i, ((n1, v1), (n2, v2), (n3, v3)) in enumerate(bc_conditions_zip):
             assert n1 == n2 == n3, f'n1:{n1}, n2:{n2}, n3:{n3}'
             assert prev_patch_last_face_n+1 == v1['startFace']
             patch_end_face_n = prev_patch_last_face_n+v1['nFaces']
-            
+            self.bc_conditions_n += 1
+
             if v1['type'] != 'empty':
                 idx_range = torch.arange(prev_patch_last_face_n+1, patch_end_face_n+1,dtype=torch.int64)
                 BC_item = self.Boundary_face(face_idx=idx_range, patch_name=n1,dim=self.dim)
                 
-                for metric, bc_v in zip(['U','p'],[v2,v3]):
+                for metric, bc_v in zip(('U','p'),(v2,v3)):
+                    assert metric in ("U","p")
                     BC_item._assign_bc(flow_metric=metric,
                                        bc_type=bc_v['type'],
                                        value=bc_v.get('value',None))
@@ -173,8 +176,8 @@ class OpenFoam_Mesh(FVM_Mesh):
 
             prev_patch_last_face_n = patch_end_face_n
 
-        assert patch_end_face_n < len(self.face_owners)
-        print(f'   {i} Boundary Conditions found in /constant/polyMesh/boundary')
+            assert patch_end_face_n < len(self.face_owners)
+        print(f'   {self.bc_conditions_n} Boundary Conditions found in /constant/polyMesh/boundary')
 
     # TODO: Currently we assume a zero folder, could look at sourcing the latest for U,p,Vc
 

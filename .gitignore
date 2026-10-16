@@ -28,3 +28,6 @@ UEqn
 
 # Save space by not including the raw Mesh
 *.msh
+
+# Workspace
+.venv/

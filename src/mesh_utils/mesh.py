@@ -72,11 +72,11 @@ class FVM_Mesh():
         self._detect_and_collapse_dim()
         self._assign_cell_centres()
         self._assign_cell_volumes()
-        self._assign_interp_weights()
         self._assign_face_owners()
         self._assign_face_neighbours()
         self.num_internal_faces = len(self.face_neighbours)
         self.internal_faces = torch.arange(self.num_internal_faces, dtype=torch.int64)
+        self._assign_interp_weights()
         self._allocate_boundary_faces()
 
         self._assign_face_properties()
@@ -140,9 +140,9 @@ class FVM_Mesh():
     class Boundary_face():  
         def __init__(self, face_idx:list, patch_name:str, dim:int): 
             self.name = patch_name
-            self.U_type: str
+            self.U_type: Literal['noSlip', 'zeroGradient', 'fixedValue']
             self.U_value: list
-            self.p_type: list
+            self.p_type: Literal['noSlip', 'zeroGradient', 'fixedValue']
             self.p_value: float
             self.face_idx:list = face_idx
             self.dim: int = dim
@@ -152,14 +152,16 @@ class FVM_Mesh():
         def _assign_bc(self, 
                        bc_type:Literal['noSlip', 'zeroGradient', 'fixedValue'], 
                        flow_metric:Literal['U', 'p'],
-                       value = None,
+                       value: float | list | None = None,
                        ):
             if bc_type == 'fixedValue':
                 assert value is not None
 
             if flow_metric == 'U':
+                assert isinstance(value, list)
                 self._assign_U_bc(bc_type,value)
             elif flow_metric == 'p':
+                assert isinstance(value, float)
                 self._assign_p_bc(bc_type,value)
 
         def _assign_face_idx(self, face_idx):
@@ -167,14 +169,14 @@ class FVM_Mesh():
 
         def _assign_U_bc(self, 
                          bc_type:Literal['noSlip', 'zeroGradient', 'fixedValue'],
-                         value:list = None
+                         value:list
                          ):
             self.U_type = bc_type
             self.U_value = value[:self.dim] if isinstance(value, list) else value
 
         def _assign_p_bc(self, 
                          bc_type:Literal['noSlip', 'zeroGradient', 'fixedValue'],
-                         value:float = None
+                         value:float
                          ):
             self.p_type = bc_type
             self.p_value = value
